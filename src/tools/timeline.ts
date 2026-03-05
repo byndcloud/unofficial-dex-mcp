@@ -16,17 +16,26 @@ function toError(error: unknown) {
   };
 }
 
+const timelineContactSchema = z.object({
+  contact_id: z.string(),
+});
+
+const meetingTypes = [
+  "call", "coffee", "email", "meal", "meeting",
+  "networking", "note", "other", "party", "text",
+] as const;
+
 export function registerTimelineTools(server: McpServer): void {
   server.tool(
     "dex_create_note",
-    "Create a new note or timeline entry associated with contacts. Available note types: 'meeting', 'call', 'email', 'note', 'coffee', 'lunch', 'dinner', 'event'. Use the type field to categorize the interaction.",
+    "Create a new note or timeline entry. Requires event_time (ISO datetime). Use meeting_type to categorize: 'call', 'coffee', 'email', 'meal', 'meeting', 'networking', 'note', 'other', 'party', 'text'. Associate contacts via timeline_items_contacts array of { contact_id }. The note text goes in the 'note' field.",
     {
       note: z.object({
-        content: z.string().optional(),
-        type: z.string().optional(),
-        contactIds: z.array(z.string()).optional(),
-        date: z.string().optional(),
-        title: z.string().optional(),
+        note: z.string().optional(),
+        event_time: z.string(),
+        meeting_type: z.enum(meetingTypes).optional(),
+        custom_emoji: z.string().optional(),
+        timeline_items_contacts: z.array(timelineContactSchema).optional(),
       }),
     },
     async (args) => {
@@ -41,15 +50,15 @@ export function registerTimelineTools(server: McpServer): void {
 
   server.tool(
     "dex_update_note",
-    "Update a note by ID. Modify content, associated contacts, note type, or date.",
+    "Update a note by ID. Can modify the note text, event_time, meeting_type ('call', 'coffee', 'email', 'meal', 'meeting', 'networking', 'note', 'other', 'party', 'text'), associated contacts (timeline_items_contacts), or custom_emoji.",
     {
       noteId: z.string(),
       note: z.object({
-        content: z.string().optional(),
-        type: z.string().optional(),
-        contactIds: z.array(z.string()).optional(),
-        date: z.string().optional(),
-        title: z.string().optional(),
+        note: z.string().optional(),
+        event_time: z.string().optional(),
+        meeting_type: z.enum(meetingTypes).optional(),
+        custom_emoji: z.string().optional(),
+        timeline_items_contacts: z.array(timelineContactSchema).optional(),
       }),
     },
     async (args) => {
