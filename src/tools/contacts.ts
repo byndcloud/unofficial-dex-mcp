@@ -120,12 +120,68 @@ function toError(error: unknown) {
 export function registerContactTools(server: McpServer): void {
   server.tool(
     "dex_get_contact",
-    "Retrieve a single contact by ID with full details including tags, groups, notes, and custom fields.",
-    { contactId: z.string() },
+    "Retrieve a single contact by ID. Automatically fetches the contact's notes/timeline entries " +
+      "and includes them in the response under a 'notes' key. Use notesLimit to control how many " +
+      "notes are fetched (default 50). If the contact has more notes than a single page, pagination " +
+      "is handled automatically.",
+    {
+      contactId: z.string(),
+      includeNotes: z
+        .boolean()
+        .optional()
+        .describe("Fetch and include the contact's notes/timeline entries. Defaults to true."),
+      notesLimit: z
+        .number()
+        .min(1)
+        .optional()
+        .describe("Max number of notes to fetch. Defaults to 50. Paginated automatically if above 50."),
+    },
     async (args) => {
       try {
-        const result = await dex.get(`/v1/contacts/${args.contactId}`);
-        return toResult(result);
+        const fetchNotes = args.includeNotes !== false;
+        const notesLimit = args.notesLimit ?? 50;
+        const PAGE_SIZE = 50;
+
+        const contactPromise = dex.get<Record<string, unknown>>(
+          `/v1/contacts/${args.contactId}`
+        );
+
+        if (!fetchNotes) {
+          return toResult(await contactPromise);
+        }
+
+        const firstPage = await dex.get<{
+          data?: { items?: unknown[]; nextCursor?: string };
+        }>("/v1/timeline/", {
+          contactId: args.contactId,
+          take: String(Math.min(notesLimit, PAGE_SIZE)),
+        });
+
+        const allItems: unknown[] = firstPage.data?.items ?? [];
+        let nextCursor = firstPage.data?.nextCursor;
+        let remaining = notesLimit - allItems.length;
+
+        while (nextCursor && remaining > 0) {
+          const page = await dex.get<{
+            data?: { items?: unknown[]; nextCursor?: string };
+          }>("/v1/timeline/", {
+            contactId: args.contactId,
+            take: String(Math.min(remaining, PAGE_SIZE)),
+            cursor: nextCursor,
+          });
+
+          const items = page.data?.items ?? [];
+          if (items.length === 0) break;
+
+          allItems.push(...items);
+          nextCursor = page.data?.nextCursor;
+          remaining -= items.length;
+        }
+
+        const contact = await contactPromise;
+        contact.notes = allItems;
+
+        return toResult(contact);
       } catch (error) {
         return toError(error);
       }

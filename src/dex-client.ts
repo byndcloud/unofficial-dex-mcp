@@ -33,22 +33,44 @@ export class DexApiError extends Error {
   }
 }
 
+export type QueryValue =
+  | string
+  | number
+  | boolean
+  | undefined
+  | Record<string, string | number | boolean | undefined>;
+
+function applyQuery(
+  url: URL,
+  query: Record<string, QueryValue>
+): void {
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+
+    if (typeof value === "object") {
+      for (const [nestedKey, nestedValue] of Object.entries(value)) {
+        if (nestedValue !== undefined && nestedValue !== null) {
+          url.searchParams.set(`${key}[${nestedKey}]`, String(nestedValue));
+        }
+      }
+    } else {
+      url.searchParams.set(key, String(value));
+    }
+  }
+}
+
 async function request<T = unknown>(
   method: string,
   path: string,
   options?: {
-    query?: Record<string, string | number | boolean | undefined>;
+    query?: Record<string, QueryValue>;
     body?: unknown;
   }
 ): Promise<T> {
   const url = new URL(path, BASE_URL);
 
   if (options?.query) {
-    for (const [key, value] of Object.entries(options.query)) {
-      if (value !== undefined && value !== null) {
-        url.searchParams.set(key, String(value));
-      }
-    }
+    applyQuery(url, options.query);
   }
 
   const res = await fetch(url.toString(), {
@@ -73,33 +95,19 @@ async function request<T = unknown>(
 }
 
 export const dex = {
-  get<T = unknown>(
-    path: string,
-    query?: Record<string, string | number | boolean | undefined>
-  ) {
+  get<T = unknown>(path: string, query?: Record<string, QueryValue>) {
     return request<T>("GET", path, { query });
   },
 
-  post<T = unknown>(
-    path: string,
-    body?: unknown,
-    query?: Record<string, string | number | boolean | undefined>
-  ) {
+  post<T = unknown>(path: string, body?: unknown, query?: Record<string, QueryValue>) {
     return request<T>("POST", path, { body, query });
   },
 
-  put<T = unknown>(
-    path: string,
-    body?: unknown,
-    query?: Record<string, string | number | boolean | undefined>
-  ) {
+  put<T = unknown>(path: string, body?: unknown, query?: Record<string, QueryValue>) {
     return request<T>("PUT", path, { body, query });
   },
 
-  delete<T = unknown>(
-    path: string,
-    query?: Record<string, string | number | boolean | undefined>
-  ) {
+  delete<T = unknown>(path: string, query?: Record<string, QueryValue>) {
     return request<T>("DELETE", path, { query });
   },
 };
