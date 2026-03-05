@@ -101,6 +101,19 @@ Run the server in development mode (with hot reload via tsx):
 DEX_API_KEY=dex_your_key npm run dev
 ```
 
+## Testing with MCP Inspector
+
+The project includes a built-in inspect script that opens the [MCP Inspector](https://github.com/modelcontextprotocol/inspector) UI in your browser. It loads `DEX_API_KEY` from your `.env` file automatically.
+
+```bash
+npm run build
+npm run inspect
+```
+
+This starts the inspector at `http://localhost:6274` where you can browse all tools and invoke them interactively.
+
+> **Note:** Requires Node.js >= 18. If using nvm: `nvm use 21` (or any 18+) before running.
+
 ## Available Tools (27)
 
 | Tool | Description |
