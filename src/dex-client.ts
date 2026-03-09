@@ -15,11 +15,14 @@ export function getApiKey(): string {
   return apiKey;
 }
 
-function headers(): Record<string, string> {
-  return {
+function headers(hasBody: boolean): Record<string, string> {
+  const h: Record<string, string> = {
     Authorization: `Bearer ${getApiKey()}`,
-    "Content-Type": "application/json",
   };
+  if (hasBody) {
+    h["Content-Type"] = "application/json";
+  }
+  return h;
 }
 
 export class DexApiError extends Error {
@@ -73,10 +76,11 @@ async function request<T = unknown>(
     applyQuery(url, options.query);
   }
 
+  const hasBody = options?.body !== undefined;
   const res = await fetch(url.toString(), {
     method,
-    headers: headers(),
-    body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
+    headers: headers(hasBody),
+    body: hasBody ? JSON.stringify(options.body) : undefined,
   });
 
   const text = await res.text();
