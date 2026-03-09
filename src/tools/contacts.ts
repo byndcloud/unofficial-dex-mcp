@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { dex } from "../dex-client.js";
+import { dex, type QueryValue } from "../dex-client.js";
 
 const contactEmailSchema = z.object({
   email: z.string(),
@@ -244,6 +244,106 @@ export function registerContactTools(server: McpServer): void {
         const result = await dex.post("/v1/contacts/merge", {
           contactIds: args.contactIds,
         });
+        return toResult(result);
+      } catch (error) {
+        return toError(error);
+      }
+    }
+  );
+
+  const dateRangeSchema = z.object({
+    gte: z.string().optional().describe("Greater than or equal — ISO 8601 datetime"),
+    lte: z.string().optional().describe("Less than or equal — ISO 8601 datetime"),
+  }).optional();
+
+  server.tool(
+    "dex_list_contacts",
+    "List contacts with advanced filtering, pagination, and field selection. " +
+      "Use 'where' to filter by starred, archived, frequency, birthday, location, job title, tags, groups, and more. " +
+      "Examples: find today's birthdays (where.hasBirthday), contacts with a keep-in-touch frequency (where.hasFrequency), " +
+      "monthly contacts (where.hasFrequency='monthly'), starred contacts (where.isStarred=true).",
+    {
+      take: z.number().min(1).optional().describe("Number of contacts to return (default varies by API)"),
+      skip: z.number().min(0).optional().describe("Number of contacts to skip"),
+      cursor: z.string().optional().describe("Pagination cursor (UUID) from a previous response"),
+      where: z.object({
+        in: z.array(z.string()).optional().describe("Only return contacts with these IDs"),
+        notIn: z.array(z.string()).optional().describe("Exclude contacts with these IDs"),
+        ignoreMerge: z.boolean().optional(),
+        isStarred: z.boolean().optional(),
+        isArchived: z.boolean().optional(),
+        hasLinkedin: z.string().optional().describe("Filter by LinkedIn URL or true/false"),
+        hasSource: z.string().optional().describe("Filter by source"),
+        hasName: z.string().optional().describe("Filter by name substring"),
+        hasGroups: z.union([z.string(), z.object({ not: z.string() })]).optional().describe("Group ID, or { not: groupId } to exclude"),
+        hasFrequency: z.union([z.string(), z.boolean()]).optional().describe("Frequency value (e.g. 'weekly', 'monthly') or true for any"),
+        hasLocation: z.string().optional(),
+        hasJobTitle: z.string().optional(),
+        hasNeverKeepInTouch: z.boolean().optional(),
+        hasCreatedAt: dateRangeSchema.describe("Filter by creation date range { gte, lte }"),
+        hasUpdatedAt: dateRangeSchema.describe("Filter by update date range { gte, lte }"),
+        hasBirthday: z.string().optional().describe("ISO 8601 datetime to match birthday"),
+        hasTag: z.string().optional().describe("Tag UUID"),
+        hasInteraction: z.union([z.boolean(), z.string()]).optional(),
+        hasNextReminder: z.union([z.boolean(), z.string()]).optional(),
+      }).optional(),
+      include: z.object({
+        linkedinData: z.boolean().optional(),
+        groupsCount: z.boolean().optional(),
+      }).optional(),
+      select: z.object({
+        linkedinData: z.boolean().optional(),
+        groupsCount: z.boolean().optional(),
+      }).optional(),
+    },
+    async (args) => {
+      try {
+        const query: Record<string, QueryValue> = {};
+
+        if (args.take !== undefined) query.take = args.take;
+        if (args.skip !== undefined) query.skip = args.skip;
+        if (args.cursor !== undefined) query.cursor = args.cursor;
+
+        if (args.where) {
+          const w: Record<string, QueryValue> = {};
+          const src = args.where;
+          if (src.in !== undefined)                  w.in = src.in;
+          if (src.notIn !== undefined)               w.not_in = src.notIn;
+          if (src.ignoreMerge !== undefined)          w.ignore_merge = src.ignoreMerge;
+          if (src.isStarred !== undefined)            w.is_starred = src.isStarred;
+          if (src.isArchived !== undefined)           w.is_archived = src.isArchived;
+          if (src.hasLinkedin !== undefined)          w.has_linkedin = src.hasLinkedin;
+          if (src.hasSource !== undefined)            w.has_source = src.hasSource;
+          if (src.hasName !== undefined)              w.has_name = src.hasName;
+          if (src.hasGroups !== undefined)            w.has_groups = src.hasGroups as QueryValue;
+          if (src.hasFrequency !== undefined)         w.has_frequency = src.hasFrequency as QueryValue;
+          if (src.hasLocation !== undefined)          w.has_location = src.hasLocation;
+          if (src.hasJobTitle !== undefined)          w.has_job_title = src.hasJobTitle;
+          if (src.hasNeverKeepInTouch !== undefined)  w.has_never_keep_in_touch = src.hasNeverKeepInTouch;
+          if (src.hasCreatedAt !== undefined)         w.has_created_at = src.hasCreatedAt as QueryValue;
+          if (src.hasUpdatedAt !== undefined)         w.has_updated_at = src.hasUpdatedAt as QueryValue;
+          if (src.hasBirthday !== undefined)          w.has_birthday = src.hasBirthday;
+          if (src.hasTag !== undefined)               w.has_tag = src.hasTag;
+          if (src.hasInteraction !== undefined)       w.has_interaction = src.hasInteraction as QueryValue;
+          if (src.hasNextReminder !== undefined)      w.has_next_reminder = src.hasNextReminder as QueryValue;
+          query.where = w;
+        }
+
+        if (args.include) {
+          const inc: Record<string, QueryValue> = {};
+          if (args.include.linkedinData !== undefined) inc.linkedin_data = args.include.linkedinData;
+          if (args.include.groupsCount !== undefined)  inc.groups_count = args.include.groupsCount;
+          query.include = inc;
+        }
+
+        if (args.select) {
+          const sel: Record<string, QueryValue> = {};
+          if (args.select.linkedinData !== undefined) sel.linkedin_data = args.select.linkedinData;
+          if (args.select.groupsCount !== undefined)  sel.groups_count = args.select.groupsCount;
+          query.select = sel;
+        }
+
+        const result = await dex.get("/v1/contacts/", query);
         return toResult(result);
       } catch (error) {
         return toError(error);
