@@ -237,8 +237,8 @@ export function registerContactTools(server: McpServer): void {
 
   server.tool(
     "dex_merge_contacts",
-    "Merge two or more duplicate contacts into one. The first ID becomes the primary contact that is kept and enriched with data from the others.",
-    { contactIds: z.array(z.string()).min(2) },
+    "Merge two or more duplicate contacts into one. The first ID in the group becomes the primary contact that is kept and enriched with data from the others. You can merge multiple groups at once.",
+    { contactIds: z.array(z.array(z.string()).min(2)).min(1).describe("Array of groups to merge — each group is an array of contact IDs (e.g. [['id1','id2']] merges id1 and id2)") },
     async (args) => {
       try {
         const result = await dex.post("/v1/contacts/merge", {
