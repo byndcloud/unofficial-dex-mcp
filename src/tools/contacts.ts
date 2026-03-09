@@ -96,7 +96,8 @@ const contactFieldsShape = {
     .optional(),
 
   // Keep-in-touch / reminders
-  frequency: z.string().optional(),
+  frequency: z.enum(["7 days", "14 days", "1 mon", "42 days", "3 mons", "6 mons", "1 year"]).optional()
+    .describe("Keep-in-touch frequency: '7 days' (weekly), '14 days' (every 2 weeks), '1 mon' (monthly), '42 days' (every 6 weeks), '3 mons' (every 3 months), '6 mons' (every 6 months), '1 year' (yearly)"),
   never_keep_in_touch: z.boolean().optional(),
   last_seen_at: z.string().optional(),
   next_reminder_at: z.string().optional(),
@@ -276,7 +277,7 @@ export function registerContactTools(server: McpServer): void {
         hasSource: z.string().optional().describe("Filter by source"),
         hasName: z.string().optional().describe("Filter by name substring"),
         hasGroups: z.union([z.string(), z.object({ not: z.string() })]).optional().describe("Group ID, or { not: groupId } to exclude"),
-        hasFrequency: z.union([z.string(), z.boolean()]).optional().describe("Frequency value (e.g. 'weekly', 'monthly') or true for any"),
+        hasFrequency: z.union([z.string(), z.boolean()]).optional().describe("Filter by frequency — true for any, or a specific value: '7 days', '14 days', '1 mon', '42 days', '3 mons', '6 mons', '1 year'"),
         hasLocation: z.string().optional(),
         hasJobTitle: z.string().optional(),
         hasNeverKeepInTouch: z.boolean().optional(),
