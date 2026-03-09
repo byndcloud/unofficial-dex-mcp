@@ -41,24 +41,51 @@ export type QueryValue =
   | number
   | boolean
   | undefined
-  | Record<string, string | number | boolean | undefined>;
+  | QueryValue[]
+  | { [key: string]: QueryValue };
+
+function flattenQuery(
+  prefix: string,
+  value: QueryValue,
+  out: [string, string][]
+): void {
+  if (value === undefined || value === null) return;
+
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      flattenQuery(`${prefix}[${i}]`, value[i], out);
+    }
+  } else if (typeof value === "object") {
+    for (const [k, v] of Object.entries(value)) {
+      flattenQuery(`${prefix}[${k}]`, v, out);
+    }
+  } else {
+    out.push([prefix, String(value)]);
+  }
+}
 
 function applyQuery(
   url: URL,
   query: Record<string, QueryValue>
 ): void {
+  const pairs: [string, string][] = [];
   for (const [key, value] of Object.entries(query)) {
     if (value === undefined || value === null) continue;
 
-    if (typeof value === "object") {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        flattenQuery(`${key}[${i}]`, value[i], pairs);
+      }
+    } else if (typeof value === "object") {
       for (const [nestedKey, nestedValue] of Object.entries(value)) {
-        if (nestedValue !== undefined && nestedValue !== null) {
-          url.searchParams.set(`${key}[${nestedKey}]`, String(nestedValue));
-        }
+        flattenQuery(`${key}[${nestedKey}]`, nestedValue, pairs);
       }
     } else {
-      url.searchParams.set(key, String(value));
+      pairs.push([key, String(value)]);
     }
+  }
+  for (const [k, v] of pairs) {
+    url.searchParams.set(k, v);
   }
 }
 
