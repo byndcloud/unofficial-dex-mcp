@@ -300,13 +300,14 @@ export function registerContactTools(server: McpServer): void {
     async (args) => {
       try {
         const query: Record<string, QueryValue> = {};
-
         if (args.take !== undefined) query.take = args.take;
         if (args.skip !== undefined) query.skip = args.skip;
         if (args.cursor !== undefined) query.cursor = args.cursor;
 
+        const body: Record<string, unknown> = {};
+
         if (args.where) {
-          const w: Record<string, QueryValue> = {};
+          const w: Record<string, unknown> = {};
           const src = args.where;
           if (src.in !== undefined)                  w.in = src.in;
           if (src.notIn !== undefined)               w.not_in = src.notIn;
@@ -316,35 +317,39 @@ export function registerContactTools(server: McpServer): void {
           if (src.hasLinkedin !== undefined)          w.has_linkedin = src.hasLinkedin;
           if (src.hasSource !== undefined)            w.has_source = src.hasSource;
           if (src.hasName !== undefined)              w.has_name = src.hasName;
-          if (src.hasGroups !== undefined)            w.has_groups = src.hasGroups as QueryValue;
-          if (src.hasFrequency !== undefined)         w.has_frequency = src.hasFrequency as QueryValue;
+          if (src.hasGroups !== undefined)            w.has_groups = src.hasGroups;
+          if (src.hasFrequency !== undefined)         w.has_frequency = src.hasFrequency;
           if (src.hasLocation !== undefined)          w.has_location = src.hasLocation;
           if (src.hasJobTitle !== undefined)          w.has_job_title = src.hasJobTitle;
           if (src.hasNeverKeepInTouch !== undefined)  w.has_never_keep_in_touch = src.hasNeverKeepInTouch;
-          if (src.hasCreatedAt !== undefined)         w.has_created_at = src.hasCreatedAt as QueryValue;
-          if (src.hasUpdatedAt !== undefined)         w.has_updated_at = src.hasUpdatedAt as QueryValue;
-          if (src.hasBirthday !== undefined)          w.has_birthday = src.hasBirthday as QueryValue;
+          if (src.hasCreatedAt !== undefined)         w.has_created_at = src.hasCreatedAt;
+          if (src.hasUpdatedAt !== undefined)         w.has_updated_at = src.hasUpdatedAt;
+          if (src.hasBirthday !== undefined)          w.has_birthday = src.hasBirthday;
           if (src.hasTag !== undefined)               w.has_tag = src.hasTag;
-          if (src.hasInteraction !== undefined)       w.has_interaction = src.hasInteraction as QueryValue;
-          if (src.hasNextReminder !== undefined)      w.has_next_reminder = src.hasNextReminder as QueryValue;
-          query.where = w;
+          if (src.hasInteraction !== undefined)       w.has_interaction = src.hasInteraction;
+          if (src.hasNextReminder !== undefined)      w.has_next_reminder = src.hasNextReminder;
+          body.where = w;
         }
 
         if (args.include) {
-          const inc: Record<string, QueryValue> = {};
+          const inc: Record<string, boolean> = {};
           if (args.include.linkedinData !== undefined) inc.linkedin_data = args.include.linkedinData;
           if (args.include.groupsCount !== undefined)  inc.groups_count = args.include.groupsCount;
-          query.include = inc;
+          body.include = inc;
         }
 
         if (args.select) {
-          const sel: Record<string, QueryValue> = {};
+          const sel: Record<string, boolean> = {};
           if (args.select.linkedinData !== undefined) sel.linkedin_data = args.select.linkedinData;
           if (args.select.groupsCount !== undefined)  sel.groups_count = args.select.groupsCount;
-          query.select = sel;
+          body.select = sel;
         }
 
-        const result = await dex.get("/v1/contacts/", query);
+        const result = await dex.post(
+          "/v1/contacts/filter",
+          Object.keys(body).length > 0 ? body : undefined,
+          Object.keys(query).length > 0 ? query : undefined,
+        );
         return toResult(result);
       } catch (error) {
         return toError(error);
