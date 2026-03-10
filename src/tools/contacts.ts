@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { dex, type QueryValue } from "../dex-client.js";
+import { dex } from "../dex-client.js";
 
 const contactEmailSchema = z.object({
   email: z.string(),
@@ -299,12 +299,11 @@ export function registerContactTools(server: McpServer): void {
     },
     async (args) => {
       try {
-        const query: Record<string, QueryValue> = {};
-        if (args.take !== undefined) query.take = args.take;
-        if (args.skip !== undefined) query.skip = args.skip;
-        if (args.cursor !== undefined) query.cursor = args.cursor;
-
         const body: Record<string, unknown> = {};
+
+        if (args.take !== undefined) body.take = args.take;
+        if (args.skip !== undefined) body.skip = args.skip;
+        if (args.cursor !== undefined) body.cursor = args.cursor;
 
         if (args.where) {
           const w: Record<string, unknown> = {};
@@ -345,11 +344,7 @@ export function registerContactTools(server: McpServer): void {
           body.select = sel;
         }
 
-        const result = await dex.post(
-          "/v1/contacts/filter",
-          Object.keys(body).length > 0 ? body : undefined,
-          Object.keys(query).length > 0 ? query : undefined,
-        );
+        const result = await dex.post("/v1/contacts/filter", body);
         return toResult(result);
       } catch (error) {
         return toError(error);
