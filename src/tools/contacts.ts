@@ -283,7 +283,7 @@ export function registerContactTools(server: McpServer): void {
         hasNeverKeepInTouch: z.boolean().optional(),
         hasCreatedAt: dateRangeSchema.describe("Filter by creation date range { gte, lte }"),
         hasUpdatedAt: dateRangeSchema.describe("Filter by update date range { gte, lte }"),
-        hasBirthday: z.string().optional().describe("ISO 8601 datetime to match birthday"),
+        hasBirthday: z.union([z.boolean(), z.string()]).optional().describe("true to list all contacts with a birthday set, or an ISO 8601 datetime to match a specific date"),
         hasTag: z.string().optional().describe("Tag UUID"),
         hasInteraction: z.union([z.boolean(), z.string()]).optional(),
         hasNextReminder: z.union([z.boolean(), z.string()]).optional(),
@@ -323,7 +323,7 @@ export function registerContactTools(server: McpServer): void {
           if (src.hasNeverKeepInTouch !== undefined)  w.has_never_keep_in_touch = src.hasNeverKeepInTouch;
           if (src.hasCreatedAt !== undefined)         w.has_created_at = src.hasCreatedAt as QueryValue;
           if (src.hasUpdatedAt !== undefined)         w.has_updated_at = src.hasUpdatedAt as QueryValue;
-          if (src.hasBirthday !== undefined)          w.has_birthday = src.hasBirthday;
+          if (src.hasBirthday !== undefined)          w.has_birthday = src.hasBirthday as QueryValue;
           if (src.hasTag !== undefined)               w.has_tag = src.hasTag;
           if (src.hasInteraction !== undefined)       w.has_interaction = src.hasInteraction as QueryValue;
           if (src.hasNextReminder !== undefined)      w.has_next_reminder = src.hasNextReminder as QueryValue;

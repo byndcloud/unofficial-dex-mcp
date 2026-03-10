@@ -84,8 +84,9 @@ function applyQuery(
       pairs.push([key, String(value)]);
     }
   }
-  for (const [k, v] of pairs) {
-    url.searchParams.set(k, v);
+  const qs = pairs.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+  if (qs) {
+    url.search = url.search ? `${url.search}&${qs}` : `?${qs}`;
   }
 }
 
