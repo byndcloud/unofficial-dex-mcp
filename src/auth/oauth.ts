@@ -22,6 +22,17 @@ export function createOAuthRouter(): Router {
   router.use(urlencoded({ extended: false }));
   router.use(json());
 
+  // --- OAuth 2.0 Protected Resource Metadata (RFC 9728) ---
+  router.get("/.well-known/oauth-protected-resource", (_req, res) => {
+    const baseUrl = getBaseUrl();
+    res.json({
+      resource: baseUrl,
+      authorization_servers: [baseUrl],
+      bearer_methods_supported: ["header"],
+      scopes_supported: ["mcp"],
+    });
+  });
+
   // --- OAuth 2.0 Authorization Server Metadata (RFC 8414) ---
   router.get("/.well-known/oauth-authorization-server", (_req, res) => {
     const baseUrl = getBaseUrl();
