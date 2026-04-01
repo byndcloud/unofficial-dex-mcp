@@ -1,23 +1,10 @@
+import { getDexApiKey } from "./context.js";
+
 const BASE_URL = "https://api.prod.getdex.com";
-
-let apiKey: string | undefined;
-
-export function getApiKey(): string {
-  if (!apiKey) {
-    apiKey = process.env.DEX_API_KEY;
-  }
-  if (!apiKey) {
-    throw new Error(
-      "DEX_API_KEY environment variable is not set. " +
-        "Get your API key from Dex → Settings → API."
-    );
-  }
-  return apiKey;
-}
 
 function headers(hasBody: boolean): Record<string, string> {
   const h: Record<string, string> = {
-    Authorization: `Bearer ${getApiKey()}`,
+    Authorization: `Bearer ${getDexApiKey()}`,
   };
   if (hasBody) {
     h["Content-Type"] = "application/json";

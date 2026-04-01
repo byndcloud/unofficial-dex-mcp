@@ -1,7 +1,7 @@
 {
   "name": "unnoficial-dex-mcp",
-  "version": "1.0.0",
-  "description": "Unofficial MCP server for the Dex CRM API (getdex.com)",
+  "version": "2.0.0",
+  "description": "Unofficial MCP server for the Dex CRM API (getdex.com) — supports stdio and remote HTTP with OAuth",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -9,22 +9,28 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts",
+    "dev": "MCP_TRANSPORT=http tsx watch src/index.ts",
+    "dev:stdio": "MCP_TRANSPORT=stdio DEX_API_KEY=${DEX_API_KEY} tsx src/index.ts",
     "start": "node dist/index.js",
-    "inspect": "dotenv -- npx @modelcontextprotocol/inspector node dist/index.js"
+    "inspect": "dotenv -- npx @modelcontextprotocol/inspector node dist/index.js",
+    "deploy": "./deploy.sh"
   },
   "keywords": [
     "mcp",
     "dex",
     "crm",
-    "getdex"
+    "getdex",
+    "oauth",
+    "cloud-run"
   ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^5.1.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/node": "^25.3.3",
     "dotenv-cli": "^11.0.0",
     "tsx": "^4.21.0",

@@ -1,19 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { dex } from "../dex-client.js";
-
-function toResult(result: unknown) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-  };
-}
-
-function toError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text" as const, text: `Error: ${message}` }],
-    isError: true as const,
-  };
-}
+import { toResult, toError } from "../lib/helpers.js";
 
 export function registerUserTools(server: McpServer): void {
   server.tool(

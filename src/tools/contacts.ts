@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { dex } from "../dex-client.js";
+import { toResult, toError } from "../lib/helpers.js";
 
 const contactEmailSchema = z.object({
   email: z.string(),
@@ -103,20 +104,6 @@ const contactFieldsShape = {
   next_reminder_at: z.string().optional(),
   ignore_merge: z.boolean().optional(),
 };
-
-function toResult(result: unknown) {
-  return {
-    content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }],
-  };
-}
-
-function toError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
-  return {
-    content: [{ type: "text" as const, text: `Error: ${message}` }],
-    isError: true as const,
-  };
-}
 
 export function registerContactTools(server: McpServer): void {
   server.tool(
